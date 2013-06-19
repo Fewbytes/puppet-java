@@ -14,6 +14,8 @@ class java::export(
         "1.7" => "7",
     }
     
+	Exec{ path => "/usr/bin:/usr/sbin:/sbin:/bin" }
+
     class oracle {
         
         if $java::export::install_jdk {
@@ -129,7 +131,7 @@ class java::export(
                 }
             }
             
-            class { "openjdk_set_defaults": }
+            include "openjdk_set_defaults"
         }
         
         if $java::export::install_jre {
@@ -140,7 +142,7 @@ class java::export(
                 }
             }
             
-            class { "openjdk_set_defaults": }
+            include "openjdk_set_defaults"
         }
         
     }
