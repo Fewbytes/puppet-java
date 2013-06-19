@@ -45,6 +45,13 @@ class java::export(
         
         class openjdk_set_defaults {
             
+			define java_update_alternative($path) {
+				exec{$title:
+					user => root,
+					command => "update-alternatives --set ${title} ${path}/$title"
+				}	
+			}
+                
             if $java::export::set_as_default {
                 # http://packages.ubuntu.com/precise/amd64/openjdk-6-jdk/filelist
                 # http://packages.ubuntu.com/precise/amd64/openjdk-6-jre/filelist
@@ -52,16 +59,10 @@ class java::export(
                 # http://packages.ubuntu.com/precise/amd64/icedtea-6-plugin/filelist
                 
                 $path_prefix          = "/usr/lib/jvm/java-${java::export::java_version}-openjdk-${::architecture}"
-                $jdk_command_template = "update-alternatives --set ${name} ${path_prefix}/bin/${name}"
-                $jre_command_template = "update-alternatives --set ${name} ${path_prefix}/jre/bin/${name}"
-                $lib_command_template = "update-alternatives --set ${name} ${path_prefix}/jre/lib/${name}"
                 
-                Exec { user => root, }
-                
-                exec { "jdk_defaults":
-                    name    => [
+                java_update_alternative { [
                         "appletviewer",
-                        "apt",
+                        #"apt",
                         "extcheck",
                         "idlj",
                         "jar",
@@ -82,18 +83,15 @@ class java::export(
                         "jstat",
                         "jstatd",
                         "native2ascii",
-                        "rmid",
                         "schemagen",
                         "serialver",
                         "wsgen",
                         "wsimport",
                         "xjc",
-                        "policytool",
                         "rmic",
-                    ],
-                    command => $jdk_command_template,
-                } -> exec { "jre_defaults":
-                    name    => [
+                    ]:
+                    path => "${path_prefix}/bin"
+                } -> java_update_alternative { [
                         "java",
                         "keytool",
                         "orbd",
@@ -102,20 +100,21 @@ class java::export(
                         "servertool",
                         "tnameserv",
                         "unpack200",
-                        "javaws",
-                    ],
-                    command => $jre_command_template,
-                } -> exec { "lib_defaults":
-                    name    => [
-                        "jexec",
-                    ],
-                    command => $lib_command_template,
-                } -> exec { "browser_defaults":
-                    name    => [
-                        "libnpjp2",
-                    ],
-                    command => "update-alternatives --set libnpjp2.so  ${path_prefix}/jre/lib/${::architecture}/IcedTeaPlugin.so",
-                }
+                        "rmid",
+                        "policytool",
+                    ]:
+                    path => "${path_prefix}/jre/bin"
+                } -> java_update_alternative {"jexec":
+                    path => "${path_prefix}/jre/lib"
+				}
+				if ! ($java::export::java_version == 7 and $operatingsystem == "Ubuntu" and  versioncmp($operatingsystemrelease, "12.10") < 0) {
+					java_update_alternative { "javaws":	
+						path => "${path_prefix}/jre/lib"
+					}
+                    java_update_alternative {"libnpjp2":
+						path => "${path_prefix}/jre/lib/${::architecture}/IcedTeaPlugin.so",
+					}
+				}
             }
             
         }
